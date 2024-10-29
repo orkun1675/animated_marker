@@ -1,6 +1,10 @@
-import 'package:animated_marker/animated_marker.dart';
 import 'package:flutter/material.dart';
+
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+
+import 'package:animated_marker/animated_marker.dart';
 
 /// Stream of mock data positions for the AnimatedMarker widget:
 final List<LatLng> mockPositions = [
@@ -21,7 +25,16 @@ final Stream<LatLng> positionStream = Stream.periodic(
   },
 );
 
-void main() {
+Future<void> main() async {
+  final GoogleMapsFlutterPlatform mapsImplementation =
+      GoogleMapsFlutterPlatform.instance;
+  if (mapsImplementation is GoogleMapsFlutterAndroid) {
+    WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('Switching to the legacy Google Maps renderer due to a known '
+        'fickering bug with the latest renderer.');
+    await mapsImplementation.initializeWithRenderer(AndroidMapRenderer.legacy);
+  }
+
   runApp(const MyApp());
 }
 
@@ -41,7 +54,8 @@ class MyApp extends StatelessWidget {
           markerId: MarkerId('static-$i'),
           position: mockPositionsStatic.elementAt(i),
           infoWindow: InfoWindow(title: 'Static Marker $i'),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
         ),
     };
 
@@ -64,7 +78,8 @@ class MyApp extends StatelessWidget {
             return AnimatedMarker(
               staticMarkers: staticMarkers,
               animatedMarkers: markers,
-              duration: const Duration(seconds: 3), // change the animation duration
+              duration:
+                  const Duration(seconds: 3), // change the animation duration
               builder: (context, animatedMarkers) {
                 return GoogleMap(
                   initialCameraPosition: CameraPosition(
